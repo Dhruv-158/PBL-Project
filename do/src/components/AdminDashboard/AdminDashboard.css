@@ -1,4 +1,4 @@
-.complaint-dashboard {
+.admin-dashboard {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   max-width: 1200px;
   margin: 0 auto;
@@ -7,78 +7,69 @@
   min-height: 100vh;
 }
 
-/* Header styling */
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.dashboard-title {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+}
+
+/* Stats Section */
+.complaints-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
   margin-bottom: 24px;
 }
 
-.dashboard-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 1rem;
+.stat-card {
+  background-color: white;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  text-align: center;
 }
 
-.search-container {
+.stat-title {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* Search and Filter Section */
+.search-filter-container {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.search-bar {
+  flex: 1;
+  max-width: 400px;
   display: flex;
   align-items: center;
   background-color: white;
-  border-radius: 10px;
-  padding: 10px 16px;
-  border: 1px solid #e2e8f0;
-  width: 320px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-  transition: box-shadow 0.2s, border-color 0.2s;
+  border-radius: 8px;
+  padding: 8px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.search-container:focus-within {
-  border-color: #4f46e5;
-  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.1);
+.search-bar svg {
+  color: #64748b;
+  margin-right: 12px;
 }
 
-.search-container svg {
-  width: 18px;
-  height: 18px;
-  color: #94a3b8;
-  margin-right: 10px;
-}
-
-.search-input {
+.search-bar input {
   border: none;
   outline: none;
   width: 100%;
   font-size: 14px;
-  color: #334155;
-}
-
-.search-input::placeholder {
-  color: #94a3b8;
-}
-
-.header-actions {
-  display: flex;
-  gap: 12px;
-}
-
-.date-filter {
-  display: flex;
-  align-items: center;
-  background-color: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 8px 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
-}
-
-.date-filter input {
-  border: none;
-  outline: none;
-  color: #334155;
-  font-size: 14px;
-  cursor: pointer;
 }
 
 .filter-container {
@@ -88,131 +79,105 @@
 .filter-button {
   display: flex;
   align-items: center;
-  gap: 8px;
   background-color: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border: none;
+  border-radius: 8px;
   padding: 8px 16px;
-  cursor: pointer;
   font-size: 14px;
-  font-weight: 500;
-  color: #475569;
-  transition: background-color 0.2s, border-color 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-.filter-button:hover {
-  background-color: #f8fafc;
-  border-color: #cbd5e1;
+.filter-button svg {
+  margin-right: 8px;
+  color: #64748b;
 }
 
 .filter-dropdown {
   position: absolute;
+  top: 100%;
   right: 0;
-  top: calc(100% + 4px);
+  margin-top: 8px;
   background-color: white;
-  border-radius: 10px;
-  padding: 8px 0;
-  min-width: 180px;
-  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
-  z-index: 10;
-  border: 1px solid #e2e8f0;
-}
-
-.filter-option {
-  padding: 8px 16px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
-}
-
-.filter-option:hover {
-  background-color: #f1f5f9;
-}
-
-.complaints-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.stat-card {
-  background-color: white;
-  border-radius: 10px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   padding: 16px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e2e8f0;
+  width: 250px;
+  z-index: 10;
 }
 
-.stat-title {
-  font-size: 0.9rem;
-  color: #64748b;
-  margin-bottom: 4px;
+.filter-group {
+  margin-bottom: 16px;
 }
 
-.stat-value {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #1e293b;
+.filter-group label {
+  display: block;
+  font-size: 14px;
+  color: #475569;
+  margin-bottom: 8px;
 }
 
-.stat-pending .stat-value {
-  color: #f59e0b;
-}
-
-.stat-forwarded .stat-value {
-  color: #3b82f6;
-}
-
-.stat-resolved .stat-value {
-  color: #10b981;
-}
-
-.complaints-container {
+.filter-group select,
+.filter-group input {
   width: 100%;
-  background-color: transparent;
+  padding: 8px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
 }
 
+.clear-filter-button {
+  width: 100%;
+  background-color: #f1f5f9;
+  border: none;
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 14px;
+  color: #475569;
+  cursor: pointer;
+}
+
+.clear-filter-button:hover {
+  background-color: #e2e8f0;
+}
+
+/* Complaints List */
 .complaints-list {
   display: flex;
   flex-direction: column;
-  width: 100%;
   gap: 16px;
 }
 
-/* Empty state styling */
-.empty-state {
-  text-align: center;
-  padding: 60px 0;
-  color: #64748b;
+.no-complaints-message {
   background-color: white;
+  padding: 40px;
+  text-align: center;
   border-radius: 12px;
-  border: 1px dashed #cbd5e1;
-  width: 100%;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-}
-
-.empty-state h3 {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 12px;
-  color: #334155;
-}
-
-.empty-state p {
-  font-size: 14px;
-  max-width: 400px;
-  margin: 0 auto;
   color: #64748b;
 }
 
-/* Animation for new cards */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .complaints-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .search-filter-container {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .search-bar {
+    max-width: 100%;
+  }
+  
+  .filter-container {
+    align-self: flex-end;
+  }
 }
 
-.complaints-list > div {
-  animation: fadeIn 0.3s ease-out;
+@media (max-width: 480px) {
+  .complaints-stats {
+    grid-template-columns: 1fr;
+  }
 }

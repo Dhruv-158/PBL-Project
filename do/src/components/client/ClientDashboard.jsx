@@ -1,5 +1,25 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import "./ClientDashboard.css";
+
+// Import actions and selectors
+import { 
+  fetchComplaints, 
+  selectFilteredComplaints,
+  setCurrentComplaint,
+  addComplaint
+} from "../../State/complaintsSlice";
+
+import {
+  toggleCreateModal,
+  toggleViewModal,
+  setActiveTab,
+  selectActiveTab,
+  selectCreateModalState,
+  selectViewModalState
+} from "../../State/uiSlice";
+
+import { selectCurrentUser } from "../../State/authSlice";
 
 // Icon Components
 const PlusIcon = () => (
@@ -40,96 +60,54 @@ const ClipboardIcon = () => (
 );
 
 const ClientDashboard = () => {
-  // State variables
-  const [activeTab, setActiveTab] = useState("all");
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showViewModal, setShowViewModal] = useState(false);
-  const [newComplaint, setNewComplaint] = useState({
+  const dispatch = useDispatch();
+
+  // Get user information from auth slice
+  const currentUser = useSelector(selectCurrentUser);
+
+  // Get UI state
+  const activeTab = useSelector(selectActiveTab);
+  const showCreateModal = useSelector(selectCreateModalState);
+  const showViewModal = useSelector(selectViewModalState);
+  
+  // Get complaint data
+  const filteredComplaints = useSelector(state => {
+    const complaints = selectFilteredComplaints(state);
+    // Filter for current user's complaints only
+    return complaints.filter(c => c.erNumber === currentUser?.erNumber || c.erno === currentUser?.erNumber);
+  });
+  
+  const currentComplaint = useSelector(state => state.complaints.currentComplaint);
+  
+  // Local state for the new complaint form
+  const [newComplaint, setNewComplaint] = React.useState({
     subject: "",
     department: "",
     description: ""
   });
-  const [currentComplaint, setCurrentComplaint] = useState(null);
-  const [complaints, setComplaints] = useState([
-    {
-      id: "COMP-001",
-      subject: "Wi-Fi not working in dormitory",
-      description: "I'm unable to connect to the Wi-Fi network in my dormitory room (Room 302, Block B) since yesterday evening. I've tried restarting my devices but the issue persists.",
-      department: "IT Support",
-      status: "pending",
-      date: "2025-03-25",
-      studentName: "John Smith",
-      erNumber: "220203100027",
-      college: "ASOIT",
-      department: "Computer Science",
-      contact: "9876543210"
-    },
-    {
-      id: "COMP-002",
-      subject: "Incorrect marks in midterm assessment",
-      description: "My midterm assessment for Advanced Algorithms (CS-401) shows incorrect marks. I scored 42/50 as per the answer key but the system shows only 35/50.",
-      department: "Examination Cell",
-      status: "forwarded",
-      forwardedTo: "Examination Cell",
-      date: "2025-03-20",
-      studentName: "John Smith",
-      erNumber: "220203100027",
-      college: "ASOIT", 
-      department: "Computer Science",
-      contact: "9876543210",
-      response: {
-        content: "We have forwarded your complaint to the concerned faculty. Your marks will be rechecked and updated within 48 hours.",
-        date: "2025-03-21",
-        by: "Examination Cell Coordinator"
-      }
-    },
-    {
-      id: "COMP-003",
-      subject: "Refund for cancelled workshop",
-      description: "I had registered for the Cloud Computing workshop scheduled for March 15th which was cancelled. I have not received my refund of Rs. 1500 yet.",
-      department: "Accounts Department",
-      status: "resolved",
-      date: "2025-03-10",
-      studentName: "John Smith",
-      erNumber: "220203100027",
-      college: "ASOIT",
-      department: "Computer Science",
-      contact: "9876543210",
-      resolution: "Refund has been processed and will be credited to your account within 3-5 business days.",
-      response: {
-        content: "Your refund of Rs. 1500 has been processed (Transaction ID: REF-78945). The amount will be credited to your registered bank account within 3-5 business days.",
-        date: "2025-03-12",
-        by: "Accounts Department"
-      }
-    }
-  ]);
 
-  // Filter complaints based on active tab
-  const filteredComplaints = complaints.filter(complaint => {
-    if (activeTab === "all") return true;
-    return complaint.status === activeTab;
-  });
+  // Fetch complaints on component mount
+  useEffect(() => {
+    dispatch(fetchComplaints());
+  }, [dispatch]);
 
   // Handle complaint submission
   const handleSubmitComplaint = (e) => {
     e.preventDefault();
     
-    // Create new complaint object
-    const newComplaintObj = {
-      id: `COMP-${complaints.length + 1}`.padStart(7, '0'),
+    // Create new complaint object with user data
+    const complaintToSubmit = {
       subject: newComplaint.subject,
       description: newComplaint.description,
       department: newComplaint.department,
-      status: "pending",
-      date: new Date().toISOString().split('T')[0],
-      studentName: "John Smith", // Mock data - would come from logged in user
-      erNumber: "220203100027",  // Mock data - would come from logged in user
-      college: "ASOIT",          // Mock data - would come from logged in user
-      contact: "9876543210"      // Mock data - would come from logged in user
+      studentName: currentUser.name,
+      erNumber: currentUser.erNumber,
+      college: currentUser.college,
+      contact: currentUser.contact
     };
     
-    // Add to complaints array
-    setComplaints([newComplaintObj, ...complaints]);
+    // Dispatch action to add complaint
+    dispatch(addComplaint(complaintToSubmit));
     
     // Reset form and close modal
     setNewComplaint({
@@ -137,20 +115,20 @@ const ClientDashboard = () => {
       department: "",
       description: ""
     });
-    setShowCreateModal(false);
+    dispatch(toggleCreateModal(false));
   };
 
   // Handle viewing complaint details
   const handleViewComplaint = (complaint) => {
-    setCurrentComplaint(complaint);
-    setShowViewModal(true);
+    dispatch(setCurrentComplaint(complaint));
+    dispatch(toggleViewModal(true));
   };
 
   return (
     <div className="client-dashboard">
       <div className="dashboard-header">
         <h2 className="dashboard-title">My Complaints</h2>
-        <button className="create-button" onClick={() => setShowCreateModal(true)}>
+        <button className="create-button" onClick={() => dispatch(toggleCreateModal(true))}>
           <PlusIcon />
           New Complaint
         </button>
@@ -160,25 +138,25 @@ const ClientDashboard = () => {
       <div className="tabs">
         <div 
           className={`tab ${activeTab === "all" ? "active" : ""}`}
-          onClick={() => setActiveTab("all")}
+          onClick={() => dispatch(setActiveTab("all"))}
         >
           All Complaints
         </div>
         <div 
           className={`tab ${activeTab === "pending" ? "active" : ""}`}
-          onClick={() => setActiveTab("pending")}
+          onClick={() => dispatch(setActiveTab("pending"))}
         >
           Pending
         </div>
         <div 
           className={`tab ${activeTab === "forwarded" ? "active" : ""}`}
-          onClick={() => setActiveTab("forwarded")}
+          onClick={() => dispatch(setActiveTab("forwarded"))}
         >
           In Progress
         </div>
         <div 
           className={`tab ${activeTab === "resolved" ? "active" : ""}`}
-          onClick={() => setActiveTab("resolved")}
+          onClick={() => dispatch(setActiveTab("resolved"))}
         >
           Resolved
         </div>
@@ -230,7 +208,7 @@ const ClientDashboard = () => {
                 ? "You haven't submitted any complaints yet." 
                 : `You don't have any ${activeTab} complaints.`}
             </p>
-            <button className="button button-primary" onClick={() => setShowCreateModal(true)}>
+            <button className="button button-primary" onClick={() => dispatch(toggleCreateModal(true))}>
               Submit a Complaint
             </button>
           </div>
@@ -243,7 +221,7 @@ const ClientDashboard = () => {
           <div className="modal">
             <div className="modal-header">
               <h3 className="modal-title">Submit New Complaint</h3>
-              <button className="close-button" onClick={() => setShowCreateModal(false)}>
+              <button className="close-button" onClick={() => dispatch(toggleCreateModal(false))}>
                 <CloseIcon />
               </button>
             </div>
@@ -298,7 +276,7 @@ const ClientDashboard = () => {
                 <button 
                   type="button" 
                   className="button button-secondary"
-                  onClick={() => setShowCreateModal(false)}
+                  onClick={() => dispatch(toggleCreateModal(false))}
                 >
                   Cancel
                 </button>
@@ -320,7 +298,7 @@ const ClientDashboard = () => {
           <div className="modal">
             <div className="modal-header">
               <h3 className="modal-title">Complaint Details</h3>
-              <button className="close-button" onClick={() => setShowViewModal(false)}>
+              <button className="close-button" onClick={() => dispatch(toggleViewModal(false))}>
                 <CloseIcon />
               </button>
             </div>
@@ -390,7 +368,7 @@ const ClientDashboard = () => {
               <button 
                 type="button" 
                 className="button button-secondary"
-                onClick={() => setShowViewModal(false)}
+                onClick={() => dispatch(toggleViewModal(false))}
               >
                 Close
               </button>

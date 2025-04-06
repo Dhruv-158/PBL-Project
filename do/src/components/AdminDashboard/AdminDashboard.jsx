@@ -1,6 +1,25 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import "./AdminDashboard.css";
-import ComplaintCard from "./AdminCard";
+import ComplaintCard from "./ComplaintCard";
+
+// Import actions and selectors
+import { 
+  fetchComplaints, 
+  selectFilteredComplaints, 
+  selectStats,
+  setSearchTerm,
+  setDateFilter,
+  setStatusFilter,
+  updateComplaintStatus,
+  approveIdentityRequest,
+  denyIdentityRequest
+} from "../../State/complaintsSlice";
+
+import {
+  toggleFilterDropdown,
+  selectFilterDropdownState
+} from "../../State/uiSlice";
 
 // Icon Components
 const SearchIcon = () => (
@@ -16,87 +35,47 @@ const FilterIcon = () => (
   </svg>
 );
 
-const ComplaintDashboard = () => {
-  // Initial complaints data with status
-  const [complaints, setComplaints] = useState([
-    {
-      id: "#eewwf",
-      name: "John Doe",
-      Collage: "ASOIT",
-      Department: "B-tech",
-      Contect: "9876543210",
-      Erno: "220203100014",
-      status: "pending",
-      date: "2025-03-15",
-      description: "Issue with hostel room allocation. Requested single room but assigned shared accommodation without prior notice."
-    },
-    {
-      id: "#klopoj",
-      name: "Jane Smith",
-      College: "SOCET",
-      Department: "B-tech",
-      Contact: "8765432109",
-      Erno: "220203100019",
-      status: "forwarded",
-      forwardedTo: "Hostel Administration",
-      date: "2025-03-20",
-      description: "Problems with Wi-Fi connectivity in Block B. Internet connection drops frequently making it difficult to attend online classes."
-    },
-    {
-      id: "#poklnm",
-      name: "Alex Johnson",
-      College: "SOCCA",
-      Department: "BCA",
-      Contact: "7654321098",
-      Erno: "220203100018",
-      status: "resolved",
-      resolution: "Issue has been resolved. The student's fee structure has been updated as per the scholarship criteria.",
-      date: "2025-03-10",
-      description: "Scholarship amount not reflected in fee structure. Already submitted all required documents to the accounts department."
-    }
-  ]);
+const AdminDashboard = () => {
+  const dispatch = useDispatch();
   
-  // State for search and filters
-  const [searchTerm, setSearchTerm] = useState('');
-  const [dateFilter, setDateFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  // Get data from Redux store
+  const filteredComplaints = useSelector(selectFilteredComplaints);
+  const stats = useSelector(selectStats);
+  const showFilterDropdown = useSelector(selectFilterDropdownState);
+  
+  // Get search and filter values
+  const searchTerm = useSelector(state => state.complaints.searchTerm);
+  const dateFilter = useSelector(state => state.complaints.dateFilter);
+  const statusFilter = useSelector(state => state.complaints.statusFilter);
+
+  // Fetch complaints on component mount
+  useEffect(() => {
+    dispatch(fetchComplaints());
+  }, [dispatch]);
 
   // Handle status change
   const handleStatusChange = (id, newStatus, additionalData = {}) => {
-    setComplaints(complaints.map(complaint => 
-      complaint.id === id 
-        ? { ...complaint, status: newStatus, ...additionalData } 
-        : complaint
-    ));
+    dispatch(updateComplaintStatus({ id, newStatus, additionalData }));
   };
 
-  // Filter complaints based on search, date, and status
-  const filteredComplaints = complaints.filter(complaint => {
-    // Search filter
-    const searchMatch = complaint.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                        complaint.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        (complaint.Erno && complaint.Erno.toLowerCase().includes(searchTerm.toLowerCase()));
+  // Handle identity request approval
+  const handleApproveIdentityRequest = (id) => {
+    dispatch(approveIdentityRequest(id));
     
-    // Date filter
-    const dateMatch = !dateFilter || (complaint.date && complaint.date === dateFilter);
-    
-    // Status filter
-    const statusMatch = statusFilter === 'all' || complaint.status === statusFilter;
-    
-    return searchMatch && dateMatch && statusMatch;
-  });
+    // Show a notification (in a real app, you'd use a toast component)
+    alert(`Identity information for complaint ${id} has been approved and shared with the supervisor.`);
+  };
 
-  // Calculate stats
-  const stats = {
-    total: complaints.length,
-    pending: complaints.filter(c => c.status === 'pending').length,
-    forwarded: complaints.filter(c => c.status === 'forwarded').length,
-    resolved: complaints.filter(c => c.status === 'resolved').length
+  // Handle identity request denial
+  const handleDenyIdentityRequest = (id) => {
+    dispatch(denyIdentityRequest(id));
+    
+    // Show a notification
+    alert(`Identity information request for complaint ${id} has been denied.`);
   };
 
   return (
-    <div className="complaint-dashboard">
+    <div className="admin-dashboard">
       <h2 className="dashboard-title">Admin Dashboard</h2>
       
       {/* Stats Section */}
@@ -105,98 +84,99 @@ const ComplaintDashboard = () => {
           <div className="stat-title">Total Complaints</div>
           <div className="stat-value">{stats.total}</div>
         </div>
-        <div className="stat-card stat-pending">
+        <div className="stat-card">
           <div className="stat-title">Pending</div>
           <div className="stat-value">{stats.pending}</div>
         </div>
-        <div className="stat-card stat-forwarded">
-          <div className="stat-title">Forwarded</div>
+        <div className="stat-card">
+          <div className="stat-title">In Progress</div>
           <div className="stat-value">{stats.forwarded}</div>
         </div>
-        <div className="stat-card stat-resolved">
+        <div className="stat-card">
           <div className="stat-title">Resolved</div>
           <div className="stat-value">{stats.resolved}</div>
         </div>
+        <div className="stat-card">
+          <div className="stat-title">Identity Requests</div>
+          <div className="stat-value">{stats.identityRequests}</div>
+        </div>
       </div>
       
-      <div className="dashboard-header">
-        <div className="search-container">
+      {/* Search and Filter Section */}
+      <div className="search-filter-container">
+        <div className="search-bar">
           <SearchIcon />
           <input 
             type="text" 
-            placeholder="Search by name, ID, or ER number" 
-            className="search-input" 
+            placeholder="Search by name, ID or ER number" 
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => dispatch(setSearchTerm(e.target.value))}
           />
         </div>
         
-        <div className="header-actions">
-          <div className="date-filter">
-            <input 
-              type="date" 
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-            />
-          </div>
+        <div className="filter-container">
+          <button 
+            className="filter-button"
+            onClick={() => dispatch(toggleFilterDropdown())}
+          >
+            <FilterIcon />
+            Filter
+          </button>
           
-          <div className="filter-container">
-            <button 
-              className="filter-button"
-              onClick={() => setShowFilterDropdown(!showFilterDropdown)}
-            >
-              <FilterIcon />
-              Status: {statusFilter === 'all' ? 'All' : statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)}
-            </button>
-            
-            {showFilterDropdown && (
-              <div className="filter-dropdown">
-                <div className="filter-option" onClick={() => {
-                  setStatusFilter('all');
-                  setShowFilterDropdown(false);
-                }}>
-                  All
-                </div>
-                <div className="filter-option" onClick={() => {
-                  setStatusFilter('pending');
-                  setShowFilterDropdown(false);
-                }}>
-                  Pending
-                </div>
-                <div className="filter-option" onClick={() => {
-                  setStatusFilter('forwarded');
-                  setShowFilterDropdown(false);
-                }}>
-                  Forwarded
-                </div>
-                <div className="filter-option" onClick={() => {
-                  setStatusFilter('resolved');
-                  setShowFilterDropdown(false);
-                }}>
-                  Resolved
-                </div>
+          {showFilterDropdown && (
+            <div className="filter-dropdown">
+              <div className="filter-group">
+                <label>Status:</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => dispatch(setStatusFilter(e.target.value))}
+                >
+                  <option value="all">All</option>
+                  <option value="pending">Pending</option>
+                  <option value="forwarded">In Progress</option>
+                  <option value="resolved">Resolved</option>
+                </select>
               </div>
-            )}
-          </div>
+              
+              <div className="filter-group">
+                <label>Date:</label>
+                <input 
+                  type="date" 
+                  value={dateFilter}
+                  onChange={(e) => dispatch(setDateFilter(e.target.value))}
+                />
+              </div>
+              
+              <button 
+                className="clear-filter-button"
+                onClick={() => {
+                  dispatch(setStatusFilter('all'));
+                  dispatch(setDateFilter(''));
+                  dispatch(toggleFilterDropdown(false));
+                }}
+              >
+                Clear Filters
+              </button>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Complaint Cards View */}
-      <div className="complaints-container">
+      
+      {/* Complaints List */}
+      <div className="complaints-list">
         {filteredComplaints.length > 0 ? (
-          <div className="complaints-list">
-            {filteredComplaints.map(complaint => (
-              <ComplaintCard 
-                key={complaint.id} 
-                complaint={complaint} 
-                onStatusChange={handleStatusChange}
-              />
-            ))}
-          </div>
+          filteredComplaints.map(complaint => (
+            <ComplaintCard 
+              key={complaint.id}
+              complaint={complaint}
+              onStatusChange={handleStatusChange}
+              onApproveIdentityRequest={handleApproveIdentityRequest}
+              onDenyIdentityRequest={handleDenyIdentityRequest}
+            />
+          ))
         ) : (
-          <div className="empty-state">
-            <h3>No complaints found</h3>
-            <p>Try adjusting your search or filter criteria</p>
+          <div className="no-complaints-message">
+            <p>No complaints match your search criteria.</p>
           </div>
         )}
       </div>
@@ -204,4 +184,4 @@ const ComplaintDashboard = () => {
   );
 };
 
-export default ComplaintDashboard;
+export default AdminDashboard;
