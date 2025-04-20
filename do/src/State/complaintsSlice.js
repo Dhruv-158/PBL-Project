@@ -1,195 +1,306 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit"
+import axios from "axios"
+import { API_URL } from "../config"
+import { setLoading, setError, clearError } from "./uiSlice"
 
-// Mock API calls (replace with real API endpoints in production)
-const fetchComplaintsAPI = () => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([
-        {
-          id: "#eewwf",
-          name: "John Doe",
-          college: "ASOIT",
-          department: "B-tech",
-          contact: "9876543210",
-          erno: "220203100014",
-          status: "pending",
-          date: "2025-03-15",
-          description: "Issue with hostel room allocation. Requested single room but assigned shared accommodation without prior notice.",
-          identityRequested: true
-        },
-        {
-          id: "#klopoj",
-          name: "Jane Smith",
-          college: "SOCET",
-          department: "B-tech",
-          contact: "8765432109",
-          erno: "220203100019",
-          status: "forwarded",
-          forwardedTo: "Hostel Administration",
-          date: "2025-03-20",
-          description: "Problems with Wi-Fi connectivity in Block B. Internet connection drops frequently making it difficult to attend online classes.",
-          identityRequested: false
-        },
-        {
-          id: "#poklnm",
-          name: "Alex Johnson",
-          college: "SOCCA",
-          department: "BCA",
-          contact: "7654321098",
-          erno: "220203100018",
-          status: "resolved",
-          resolution: "Issue has been resolved. The student's fee structure has been updated as per the scholarship criteria.",
-          date: "2025-03-10",
-          description: "Scholarship amount not reflected in fee structure. Already submitted all required documents to the accounts department.",
-          identityRequested: true,
-          identityApproved: true
-        }
-      ]);
-    }, 500);
-  });
-};
+// Get all complaints
+export const fetchComplaints = createAsyncThunk("complaints/fetchAll", async (_, { dispatch, rejectWithValue }) => {
+  try {
+    dispatch(setLoading(true))
+    dispatch(clearError())
 
-// Async thunks
-export const fetchComplaints = createAsyncThunk(
-  'complaints/fetchComplaints',
-  async () => {
-    const response = await fetchComplaintsAPI();
-    return response;
+    const response = await axios.get(`${API_URL}/complaints`)
+
+    dispatch(setLoading(false))
+    return response.data
+  } catch (error) {
+    dispatch(setLoading(false))
+    const errorMessage = error.response?.data?.message || "Failed to fetch complaints"
+    dispatch(setError(errorMessage))
+    return rejectWithValue(errorMessage)
   }
-);
+})
 
-export const addComplaint = createAsyncThunk(
-  'complaints/addComplaint',
-  async (complaint) => {
-    // Mock API call, would be real API in production
-    return {
-      id: `#${Math.random().toString(36).substr(2, 5)}`,
-      status: "pending",
-      date: new Date().toISOString().split('T')[0],
-      identityRequested: false,
-      ...complaint
-    };
+// Get complaint by ID
+export const fetchComplaintById = createAsyncThunk(
+  "complaints/fetchById",
+  async (id, { dispatch, rejectWithValue }) => {
+    try {
+      dispatch(setLoading(true))
+      dispatch(clearError())
+
+      const response = await axios.get(`${API_URL}/complaints/${id}`)
+
+      dispatch(setLoading(false))
+      return response.data
+    } catch (error) {
+      dispatch(setLoading(false))
+      const errorMessage = error.response?.data?.message || "Failed to fetch complaint"
+      dispatch(setError(errorMessage))
+      return rejectWithValue(errorMessage)
+    }
+  },
+)
+
+// Create new complaint
+export const createComplaint = createAsyncThunk(
+  "complaints/create",
+  async (complaintData, { dispatch, rejectWithValue }) => {
+    try {
+      dispatch(setLoading(true))
+      dispatch(clearError())
+
+      const response = await axios.post(`${API_URL}/complaints`, complaintData)
+
+      dispatch(setLoading(false))
+      return response.data
+    } catch (error) {
+      dispatch(setLoading(false))
+      const errorMessage = error.response?.data?.message || "Failed to create complaint"
+      dispatch(setError(errorMessage))
+      return rejectWithValue(errorMessage)
+    }
+  },
+)
+
+// Update complaint
+export const updateComplaint = createAsyncThunk(
+  "complaints/update",
+  async ({ id, complaintData }, { dispatch, rejectWithValue }) => {
+    try {
+      dispatch(setLoading(true))
+      dispatch(clearError())
+
+      const response = await axios.put(`${API_URL}/complaints/${id}`, complaintData)
+
+      dispatch(setLoading(false))
+      return response.data
+    } catch (error) {
+      dispatch(setLoading(false))
+      const errorMessage = error.response?.data?.message || "Failed to update complaint"
+      dispatch(setError(errorMessage))
+      return rejectWithValue(errorMessage)
+    }
+  },
+)
+
+// Add comment to complaint
+export const addComment = createAsyncThunk(
+  "complaints/addComment",
+  async ({ id, text }, { dispatch, rejectWithValue }) => {
+    try {
+      dispatch(setLoading(true))
+      dispatch(clearError())
+
+      const response = await axios.post(`${API_URL}/complaints/${id}/comments`, { text })
+
+      dispatch(setLoading(false))
+      return response.data
+    } catch (error) {
+      dispatch(setLoading(false))
+      const errorMessage = error.response?.data?.message || "Failed to add comment"
+      dispatch(setError(errorMessage))
+      return rejectWithValue(errorMessage)
+    }
+  },
+)
+
+// Assign complaint to supervisor (admin only)
+export const assignComplaint = createAsyncThunk(
+  "complaints/assign",
+  async ({ id, supervisorId }, { dispatch, rejectWithValue }) => {
+    try {
+      dispatch(setLoading(true))
+      dispatch(clearError())
+
+      const response = await axios.patch(`${API_URL}/complaints/${id}/assign`, { supervisorId })
+
+      dispatch(setLoading(false))
+      return response.data
+    } catch (error) {
+      dispatch(setLoading(false))
+      const errorMessage = error.response?.data?.message || "Failed to assign complaint"
+      dispatch(setError(errorMessage))
+      return rejectWithValue(errorMessage)
+    }
+  },
+)
+
+// Delete complaint
+export const deleteComplaint = createAsyncThunk("complaints/delete", async (id, { dispatch, rejectWithValue }) => {
+  try {
+    dispatch(setLoading(true))
+    dispatch(clearError())
+
+    await axios.delete(`${API_URL}/complaints/${id}`)
+
+    dispatch(setLoading(false))
+    return id
+  } catch (error) {
+    dispatch(setLoading(false))
+    const errorMessage = error.response?.data?.message || "Failed to delete complaint"
+    dispatch(setError(errorMessage))
+    return rejectWithValue(errorMessage)
   }
-);
+})
+
+// Request access to student details (supervisor only)
+export const requestAccess = createAsyncThunk(
+  "complaints/requestAccess",
+  async ({ complaintId, reason }, { dispatch, rejectWithValue }) => {
+    try {
+      dispatch(setLoading(true))
+      dispatch(clearError())
+
+      const response = await axios.post(`${API_URL}/access-requests/complaints/${complaintId}/request-access`, {
+        reason,
+      })
+
+      dispatch(setLoading(false))
+      return response.data
+    } catch (error) {
+      dispatch(setLoading(false))
+      const errorMessage = error.response?.data?.message || "Failed to request access"
+      dispatch(setError(errorMessage))
+      return rejectWithValue(errorMessage)
+    }
+  },
+)
+
+// Get pending access requests (admin only)
+export const fetchPendingAccessRequests = createAsyncThunk(
+  "complaints/fetchPendingAccessRequests",
+  async (_, { dispatch, rejectWithValue }) => {
+    try {
+      dispatch(setLoading(true))
+      dispatch(clearError())
+
+      const response = await axios.get(`${API_URL}/access-requests/pending`)
+
+      dispatch(setLoading(false))
+      return response.data
+    } catch (error) {
+      dispatch(setLoading(false))
+      const errorMessage = error.response?.data?.message || "Failed to fetch access requests"
+      dispatch(setError(errorMessage))
+      return rejectWithValue(errorMessage)
+    }
+  },
+)
+
+// Resolve access request (admin only)
+export const resolveAccessRequest = createAsyncThunk(
+  "complaints/resolveAccessRequest",
+  async ({ requestId, status }, { dispatch, rejectWithValue }) => {
+    try {
+      dispatch(setLoading(true))
+      dispatch(clearError())
+
+      const response = await axios.patch(`${API_URL}/access-requests/${requestId}/resolve`, { status })
+
+      dispatch(setLoading(false))
+      return response.data
+    } catch (error) {
+      dispatch(setLoading(false))
+      const errorMessage = error.response?.data?.message || "Failed to resolve access request"
+      dispatch(setError(errorMessage))
+      return rejectWithValue(errorMessage)
+    }
+  },
+)
+
+const initialState = {
+  complaints: [],
+  currentComplaint: null,
+  accessRequests: [],
+  pendingAccessRequests: [],
+}
 
 const complaintsSlice = createSlice({
-  name: 'complaints',
-  initialState: {
-    items: [],
-    status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
-    error: null,
-    searchTerm: '',
-    dateFilter: '',
-    statusFilter: 'all',
-    currentComplaint: null
-  },
+  name: "complaints",
+  initialState,
   reducers: {
-    setSearchTerm: (state, action) => {
-      state.searchTerm = action.payload;
+    clearCurrentComplaint: (state) => {
+      state.currentComplaint = null
     },
-    setDateFilter: (state, action) => {
-      state.dateFilter = action.payload;
-    },
-    setStatusFilter: (state, action) => {
-      state.statusFilter = action.payload;
-    },
-    setCurrentComplaint: (state, action) => {
-      state.currentComplaint = action.payload;
-    },
-    updateComplaintStatus: (state, action) => {
-      const { id, newStatus, additionalData } = action.payload;
-      const complaint = state.items.find(c => c.id === id);
-      if (complaint) {
-        complaint.status = newStatus;
-        if (additionalData) {
-          Object.assign(complaint, additionalData);
-        }
-      }
-    },
-    approveIdentityRequest: (state, action) => {
-      const complaint = state.items.find(c => c.id === action.payload);
-      if (complaint) {
-        complaint.identityApproved = true;
-      }
-    },
-    denyIdentityRequest: (state, action) => {
-      const complaint = state.items.find(c => c.id === action.payload);
-      if (complaint) {
-        complaint.identityRequested = false;
-      }
-    },
-    requestIdentityInfo: (state, action) => {
-      const complaint = state.items.find(c => c.id === action.payload);
-      if (complaint) {
-        complaint.identityRequested = true;
-      }
-    }
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchComplaints.pending, (state) => {
-        state.status = 'loading';
-      })
+      // Fetch all complaints
       .addCase(fetchComplaints.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.items = action.payload;
+        state.complaints = action.payload
       })
-      .addCase(fetchComplaints.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message;
+
+      // Fetch complaint by ID
+      .addCase(fetchComplaintById.fulfilled, (state, action) => {
+        state.currentComplaint = action.payload
       })
-      .addCase(addComplaint.fulfilled, (state, action) => {
-        state.items.unshift(action.payload);
-      });
-  }
-});
 
-// Selectors
-export const selectAllComplaints = (state) => state.complaints.items;
+      // Create complaint
+      .addCase(createComplaint.fulfilled, (state, action) => {
+        state.complaints.unshift(action.payload)
+      })
 
-export const selectFilteredComplaints = (state) => {
-  const { items, searchTerm, dateFilter, statusFilter } = state.complaints;
-  
-  return items.filter(complaint => {
-    // Search filter
-    const searchMatch = !searchTerm || 
-                       (complaint.name && complaint.name.toLowerCase().includes(searchTerm.toLowerCase())) || 
-                       complaint.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                       (complaint.erno && complaint.erno.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                       complaint.description.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Date filter
-    const dateMatch = !dateFilter || (complaint.date && complaint.date === dateFilter);
-    
-    // Status filter
-    const statusMatch = statusFilter === 'all' || complaint.status === statusFilter;
-    
-    return searchMatch && dateMatch && statusMatch;
-  });
-};
+      // Update complaint
+      .addCase(updateComplaint.fulfilled, (state, action) => {
+        const index = state.complaints.findIndex((c) => c._id === action.payload._id)
+        if (index !== -1) {
+          state.complaints[index] = action.payload
+        }
+        if (state.currentComplaint && state.currentComplaint._id === action.payload._id) {
+          state.currentComplaint = action.payload
+        }
+      })
 
-export const selectStats = (state) => {
-  const items = state.complaints.items;
-  return {
-    total: items.length,
-    pending: items.filter(c => c.status === 'pending').length,
-    forwarded: items.filter(c => c.status === 'forwarded').length,
-    resolved: items.filter(c => c.status === 'resolved').length,
-    identityRequests: items.filter(c => c.identityRequested && !c.identityApproved).length
-  };
-};
+      // Add comment
+      .addCase(addComment.fulfilled, (state, action) => {
+        const index = state.complaints.findIndex((c) => c._id === action.payload._id)
+        if (index !== -1) {
+          state.complaints[index] = action.payload
+        }
+        if (state.currentComplaint && state.currentComplaint._id === action.payload._id) {
+          state.currentComplaint = action.payload
+        }
+      })
 
-export const selectCurrentComplaint = (state) => state.complaints.currentComplaint;
+      // Assign complaint
+      .addCase(assignComplaint.fulfilled, (state, action) => {
+        const index = state.complaints.findIndex((c) => c._id === action.payload._id)
+        if (index !== -1) {
+          state.complaints[index] = action.payload
+        }
+        if (state.currentComplaint && state.currentComplaint._id === action.payload._id) {
+          state.currentComplaint = action.payload
+        }
+      })
 
-export const { 
-  setSearchTerm, 
-  setDateFilter, 
-  setStatusFilter, 
-  setCurrentComplaint,
-  updateComplaintStatus,
-  approveIdentityRequest,
-  denyIdentityRequest,
-  requestIdentityInfo
-} = complaintsSlice.actions;
+      // Delete complaint
+      .addCase(deleteComplaint.fulfilled, (state, action) => {
+        state.complaints = state.complaints.filter((c) => c._id !== action.payload)
+        if (state.currentComplaint && state.currentComplaint._id === action.payload) {
+          state.currentComplaint = null
+        }
+      })
 
-export default complaintsSlice.reducer;
+      // Fetch pending access requests
+      .addCase(fetchPendingAccessRequests.fulfilled, (state, action) => {
+        state.pendingAccessRequests = action.payload
+      })
+
+      // Request access
+      .addCase(requestAccess.fulfilled, (state, action) => {
+        // No state update needed, just UI notification
+      })
+
+      // Resolve access request
+      .addCase(resolveAccessRequest.fulfilled, (state, action) => {
+        state.pendingAccessRequests = state.pendingAccessRequests.filter(
+          (req) => req._id !== action.payload.request._id,
+        )
+      })
+  },
+})
+
+export const { clearCurrentComplaint } = complaintsSlice.actions
+
+export default complaintsSlice.reducer

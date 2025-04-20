@@ -1,65 +1,41 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice } from "@reduxjs/toolkit"
+
+const initialState = {
+  loading: false,
+  error: null,
+  notification: null,
+  sidebarOpen: true,
+}
 
 const uiSlice = createSlice({
-  name: 'ui',
-  initialState: {
-    showCreateModal: false,
-    showViewModal: false,
-    showFilterDropdown: false,
-    showIdentityRequestModal: false,
-    activeTab: 'all',
-    notifications: []
-  },
+  name: "ui",
+  initialState,
   reducers: {
-    toggleCreateModal: (state, action) => {
-      state.showCreateModal = action.payload !== undefined ? action.payload : !state.showCreateModal;
+    setLoading: (state, action) => {
+      state.loading = action.payload
     },
-    toggleViewModal: (state, action) => {
-      state.showViewModal = action.payload !== undefined ? action.payload : !state.showViewModal;
+    setError: (state, action) => {
+      state.error = action.payload
     },
-    toggleFilterDropdown: (state, action) => {
-      state.showFilterDropdown = action.payload !== undefined ? action.payload : !state.showFilterDropdown;
+    clearError: (state) => {
+      state.error = null
     },
-    toggleIdentityRequestModal: (state, action) => {
-      state.showIdentityRequestModal = action.payload !== undefined ? action.payload : !state.showIdentityRequestModal;
+    setNotification: (state, action) => {
+      state.notification = action.payload
     },
-    setActiveTab: (state, action) => {
-      state.activeTab = action.payload;
+    clearNotification: (state) => {
+      state.notification = null
     },
-    addNotification: (state, action) => {
-      state.notifications.push({
-        id: Date.now(),
-        message: action.payload.message,
-        type: action.payload.type || 'info',
-        timestamp: new Date().toISOString()
-      });
+    toggleSidebar: (state) => {
+      state.sidebarOpen = !state.sidebarOpen
     },
-    removeNotification: (state, action) => {
-      state.notifications = state.notifications.filter(notification => notification.id !== action.payload);
+    setSidebarOpen: (state, action) => {
+      state.sidebarOpen = action.payload
     },
-    clearNotifications: (state) => {
-      state.notifications = [];
-    }
-  }
-});
+  },
+})
 
-// Selectors
-export const selectCreateModalState = (state) => state.ui.showCreateModal;
-export const selectViewModalState = (state) => state.ui.showViewModal;
-export const selectFilterDropdownState = (state) => state.ui.showFilterDropdown;
-export const selectIdentityRequestModalState = (state) => state.ui.showIdentityRequestModal;
-export const selectActiveTab = (state) => state.ui.activeTab;
-export const selectNotifications = (state) => state.ui.notifications;
+export const { setLoading, setError, clearError, setNotification, clearNotification, toggleSidebar, setSidebarOpen } =
+  uiSlice.actions
 
-export const { 
-  toggleCreateModal, 
-  toggleViewModal, 
-  toggleFilterDropdown, 
-  toggleIdentityRequestModal,
-  setActiveTab,
-  addNotification,
-  removeNotification,
-  clearNotifications
-} = uiSlice.actions;
-
-export default uiSlice.reducer;
+export default uiSlice.reducer

@@ -1,383 +1,438 @@
-import React, { useEffect } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import "./ClientDashboard.css";
+"use client"
 
-// Import actions and selectors
-import { 
-  fetchComplaints, 
-  selectFilteredComplaints,
-  setCurrentComplaint,
-  addComplaint
-} from "../../State/complaintsSlice";
-
-import {
-  toggleCreateModal,
-  toggleViewModal,
-  setActiveTab,
-  selectActiveTab,
-  selectCreateModalState,
-  selectViewModalState
-} from "../../State/uiSlice";
-
-import { selectCurrentUser } from "../../State/authSlice";
-
-// Icon Components
-const PlusIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="12" y1="5" x2="12" y2="19"></line>
-    <line x1="5" y1="12" x2="19" y2="12"></line>
-  </svg>
-);
-
-const CloseIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="6" x2="6" y2="18"></line>
-    <line x1="6" y1="6" x2="18" y2="18"></line>
-  </svg>
-);
-
-const CalendarIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-    <line x1="16" y1="2" x2="16" y2="6"></line>
-    <line x1="8" y1="2" x2="8" y2="6"></line>
-    <line x1="3" y1="10" x2="21" y2="10"></line>
-  </svg>
-);
-
-const EyeIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-    <circle cx="12" cy="12" r="3"></circle>
-  </svg>
-);
-
-const ClipboardIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-  </svg>
-);
+import { useEffect, useState } from "react"
+import { useDispatch, useSelector } from "react-redux"
+import { fetchComplaints, createComplaint, deleteComplaint, addComment } from "../../State/complaintsSlice"
+import { logout } from "../../State/authSlice"
+import { toggleSidebar } from "../../State/uiSlice"
 
 const ClientDashboard = () => {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch()
+  const { complaints } = useSelector((state) => state.complaints)
+  const { user } = useSelector((state) => state.auth)
+  const { loading, sidebarOpen } = useSelector((state) => state.ui)
 
-  // Get user information from auth slice
-  const currentUser = useSelector(selectCurrentUser);
+  const [showNewComplaintForm, setShowNewComplaintForm] = useState(false)
+  const [filterStatus, setFilterStatus] = useState("all")
+  const [newComplaint, setNewComplaint] = useState({
+    title: "",
+    description: "",
+    priority: "medium",
+  })
+  const [commentText, setCommentText] = useState("")
+  const [selectedComplaintId, setSelectedComplaintId] = useState(null)
 
-  // Get UI state
-  const activeTab = useSelector(selectActiveTab);
-  const showCreateModal = useSelector(selectCreateModalState);
-  const showViewModal = useSelector(selectViewModalState);
-  
-  // Get complaint data
-  const filteredComplaints = useSelector(state => {
-    const complaints = selectFilteredComplaints(state);
-    // Filter for current user's complaints only
-    return complaints.filter(c => c.erNumber === currentUser?.erNumber || c.erno === currentUser?.erNumber);
-  });
-  
-  const currentComplaint = useSelector(state => state.complaints.currentComplaint);
-  
-  // Local state for the new complaint form
-  const [newComplaint, setNewComplaint] = React.useState({
-    subject: "",
-    department: "",
-    description: ""
-  });
-
-  // Fetch complaints on component mount
   useEffect(() => {
-    dispatch(fetchComplaints());
-  }, [dispatch]);
+    dispatch(fetchComplaints())
+  }, [dispatch])
 
-  // Handle complaint submission
-  const handleSubmitComplaint = (e) => {
-    e.preventDefault();
-    
-    // Create new complaint object with user data
-    const complaintToSubmit = {
-      subject: newComplaint.subject,
-      description: newComplaint.description,
-      department: newComplaint.department,
-      studentName: currentUser.name,
-      erNumber: currentUser.erNumber,
-      college: currentUser.college,
-      contact: currentUser.contact
-    };
-    
-    // Dispatch action to add complaint
-    dispatch(addComplaint(complaintToSubmit));
-    
-    // Reset form and close modal
+  const handleLogout = () => {
+    dispatch(logout())
+  }
+
+  const handleInputChange = (e) => {
     setNewComplaint({
-      subject: "",
-      department: "",
-      description: ""
-    });
-    dispatch(toggleCreateModal(false));
-  };
+      ...newComplaint,
+      [e.target.name]: e.target.value,
+    })
+  }
 
-  // Handle viewing complaint details
-  const handleViewComplaint = (complaint) => {
-    dispatch(setCurrentComplaint(complaint));
-    dispatch(toggleViewModal(true));
-  };
+  const handleSubmitComplaint = (e) => {
+    e.preventDefault()
+    dispatch(createComplaint(newComplaint))
+    setNewComplaint({
+      title: "",
+      description: "",
+      priority: "medium",
+    })
+    setShowNewComplaintForm(false)
+  }
+
+  const handleDeleteComplaint = (id) => {
+    if (window.confirm("Are you sure you want to delete this complaint?")) {
+      dispatch(deleteComplaint(id))
+    }
+  }
+
+  const handleAddComment = (e) => {
+    e.preventDefault()
+    if (commentText.trim() && selectedComplaintId) {
+      dispatch(
+        addComment({
+          id: selectedComplaintId,
+          text: commentText,
+        }),
+      )
+      setCommentText("")
+    }
+  }
+
+  const filteredComplaints = complaints.filter((complaint) => {
+    if (filterStatus === "all") return true
+    return complaint.status === filterStatus
+  })
 
   return (
-    <div className="client-dashboard">
-      <div className="dashboard-header">
-        <h2 className="dashboard-title">My Complaints</h2>
-        <button className="create-button" onClick={() => dispatch(toggleCreateModal(true))}>
-          <PlusIcon />
-          New Complaint
-        </button>
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar */}
+      <div
+        className={`bg-blue-600 text-white w-64 space-y-6 py-7 px-2 absolute inset-y-0 left-0 transform ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:relative md:translate-x-0 transition duration-200 ease-in-out z-20`}
+      >
+        <div className="flex items-center space-x-2 px-4">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+          </svg>
+          <span className="text-2xl font-extrabold">Student Portal</span>
+        </div>
+
+        <nav className="mt-10">
+          <a
+            className="flex items-center py-2 px-4 rounded transition duration-200 bg-blue-700 hover:bg-blue-800"
+            href="#"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                fillRule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                clipRule="evenodd"
+              />
+            </svg>
+            My Complaints
+          </a>
+
+          <a
+            className="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-blue-700"
+            href="#"
+            onClick={() => setShowNewComplaintForm(true)}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                fillRule="evenodd"
+                d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            New Complaint
+          </a>
+
+          <a
+            className="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-blue-700"
+            href="#"
+            onClick={handleLogout}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" viewBox="0 0 20 20" fill="currentColor">
+              <path
+                fillRule="evenodd"
+                d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm5 4a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1zm0 4a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Logout
+          </a>
+        </nav>
       </div>
-      
-      {/* Tabs */}
-      <div className="tabs">
-        <div 
-          className={`tab ${activeTab === "all" ? "active" : ""}`}
-          onClick={() => dispatch(setActiveTab("all"))}
-        >
-          All Complaints
-        </div>
-        <div 
-          className={`tab ${activeTab === "pending" ? "active" : ""}`}
-          onClick={() => dispatch(setActiveTab("pending"))}
-        >
-          Pending
-        </div>
-        <div 
-          className={`tab ${activeTab === "forwarded" ? "active" : ""}`}
-          onClick={() => dispatch(setActiveTab("forwarded"))}
-        >
-          In Progress
-        </div>
-        <div 
-          className={`tab ${activeTab === "resolved" ? "active" : ""}`}
-          onClick={() => dispatch(setActiveTab("resolved"))}
-        >
-          Resolved
-        </div>
-      </div>
-      
-      {/* Complaints List */}
-      <div className="complaints-container">
-        {filteredComplaints.length > 0 ? (
-          filteredComplaints.map(complaint => (
-            <div className="complaint-card" key={complaint.id}>
-              <div className="complaint-header">
-                <div className="complaint-id">{complaint.id}</div>
-                <div className={`complaint-status status-${complaint.status}`}>
-                  {complaint.status === "pending" && "Pending"}
-                  {complaint.status === "forwarded" && "In Progress"}
-                  {complaint.status === "resolved" && "Resolved"}
-                </div>
-              </div>
-              
-              <div className="complaint-body">
-                <div className="complaint-subject">{complaint.subject}</div>
-                <div className="complaint-description">
-                  {complaint.description.length > 150 
-                    ? `${complaint.description.substring(0, 150)}...` 
-                    : complaint.description}
-                </div>
-                
-                <div className="complaint-meta">
-                  <div className="complaint-date">
-                    <CalendarIcon />
-                    Submitted on {complaint.date}
-                  </div>
-                  <div className="complaint-action" onClick={() => handleViewComplaint(complaint)}>
-                    <EyeIcon />
-                    View Details
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="empty-state">
-            <div className="empty-state-icon">
-              <ClipboardIcon />
-            </div>
-            <h3 className="empty-state-title">No complaints found</h3>
-            <p className="empty-state-description">
-              {activeTab === "all" 
-                ? "You haven't submitted any complaints yet." 
-                : `You don't have any ${activeTab} complaints.`}
-            </p>
-            <button className="button button-primary" onClick={() => dispatch(toggleCreateModal(true))}>
-              Submit a Complaint
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top Bar */}
+        <header className="bg-white shadow-md flex items-center justify-between p-4">
+          <div className="flex items-center">
+            <button onClick={() => dispatch(toggleSidebar())} className="text-gray-500 focus:outline-none md:hidden">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <h1 className="text-xl font-bold ml-4">My Complaints</h1>
+          </div>
+
+          <div className="flex items-center">
+            <span className="text-sm text-gray-700 mr-2">Welcome, {user?.name || "Student"}</span>
+            <button
+              onClick={handleLogout}
+              className="bg-blue-500 hover:bg-blue-600 text-white text-sm px-4 py-2 rounded-md"
+            >
+              Logout
             </button>
           </div>
-        )}
-      </div>
-      
-      {/* Create Complaint Modal */}
-      {showCreateModal && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h3 className="modal-title">Submit New Complaint</h3>
-              <button className="close-button" onClick={() => dispatch(toggleCreateModal(false))}>
-                <CloseIcon />
+        </header>
+
+        {/* Content */}
+        <main className="flex-1 overflow-y-auto bg-gray-100 p-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+            <div className="flex items-center">
+              <h2 className="text-xl font-semibold">My Complaints</h2>
+              <button
+                onClick={() => setShowNewComplaintForm(true)}
+                className="ml-4 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm flex items-center"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-1"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+                New Complaint
               </button>
             </div>
-            
-            <form onSubmit={handleSubmitComplaint}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label className="form-label" htmlFor="subject">Subject</label>
+
+            <div className="mt-3 md:mt-0 flex items-center">
+              <label htmlFor="status-filter" className="mr-2 text-sm font-medium text-gray-700">
+                Filter by Status:
+              </label>
+              <select
+                id="status-filter"
+                className="border-gray-300 rounded-md shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
+                <option value="all">All</option>
+                <option value="pending">Pending</option>
+                <option value="in-review">In Review</option>
+                <option value="resolved">Resolved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+          </div>
+
+          {/* New Complaint Form */}
+          {showNewComplaintForm && (
+            <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Submit New Complaint</h3>
+                <button onClick={() => setShowNewComplaintForm(false)} className="text-gray-500 hover:text-gray-700">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path
+                      fillRule="evenodd"
+                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmitComplaint}>
+                <div className="mb-4">
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+                    Title
+                  </label>
                   <input
-                    id="subject"
                     type="text"
-                    className="form-input"
-                    placeholder="Brief title for your complaint"
-                    value={newComplaint.subject}
-                    onChange={(e) => setNewComplaint({...newComplaint, subject: e.target.value})}
+                    id="title"
+                    name="title"
                     required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Brief title of your complaint"
+                    value={newComplaint.title}
+                    onChange={handleInputChange}
                   />
                 </div>
-                
-                <div className="form-group">
-                  <label className="form-label" htmlFor="department">Department</label>
-                  <select
-                    id="department"
-                    className="form-input"
-                    value={newComplaint.department}
-                    onChange={(e) => setNewComplaint({...newComplaint, department: e.target.value})}
-                    required
-                  >
-                    <option value="">Select department</option>
-                    <option value="Academic Affairs">Academic Affairs</option>
-                    <option value="Hostel Administration">Hostel Administration</option>
-                    <option value="Examination Cell">Examination Cell</option>
-                    <option value="Accounts Department">Accounts Department</option>
-                    <option value="IT Support">IT Support</option>
-                  </select>
-                </div>
-                
-                <div className="form-group">
-                  <label className="form-label" htmlFor="description">Description</label>
+
+                <div className="mb-4">
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
                   <textarea
                     id="description"
-                    className="form-textarea"
-                    placeholder="Detailed description of your complaint..."
-                    value={newComplaint.description}
-                    onChange={(e) => setNewComplaint({...newComplaint, description: e.target.value})}
+                    name="description"
                     required
+                    rows="4"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Detailed description of your complaint"
+                    value={newComplaint.description}
+                    onChange={handleInputChange}
                   ></textarea>
                 </div>
-              </div>
-              
-              <div className="modal-footer">
-                <button 
-                  type="button" 
-                  className="button button-secondary"
-                  onClick={() => dispatch(toggleCreateModal(false))}
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit" 
-                  className="button button-primary"
-                >
-                  Submit Complaint
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-      
-      {/* View Complaint Modal */}
-      {showViewModal && currentComplaint && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h3 className="modal-title">Complaint Details</h3>
-              <button className="close-button" onClick={() => dispatch(toggleViewModal(false))}>
-                <CloseIcon />
-              </button>
-            </div>
-            
-            <div className="modal-body">
-              <div className="form-group">
-                <label className="form-label">ID</label>
-                <div className="form-input">{currentComplaint.id}</div>
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Subject</label>
-                <div className="form-input">{currentComplaint.subject}</div>
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Department</label>
-                <div className="form-input">{currentComplaint.department}</div>
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Description</label>
-                <div className="form-textarea">{currentComplaint.description}</div>
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Status</label>
-                <div className={`complaint-status status-${currentComplaint.status}`}>
-                  {currentComplaint.status === "pending" && "Pending"}
-                  {currentComplaint.status === "forwarded" && "In Progress"}
-                  {currentComplaint.status === "resolved" && "Resolved"}
-                </div>
-              </div>
-              
-              <div className="form-group">
-                <label className="form-label">Submitted On</label>
-                <div className="form-input">{currentComplaint.date}</div>
-              </div>
-              
-              {currentComplaint.status === "forwarded" && (
-                <div className="form-group">
-                  <label className="form-label">Forwarded To</label>
-                  <div className="form-input">{currentComplaint.forwardedTo}</div>
-                </div>
-              )}
-              
-              {currentComplaint.status === "resolved" && (
-                <div className="form-group">
-                  <label className="form-label">Resolution</label>
-                  <div className="form-textarea">{currentComplaint.resolution}</div>
-                </div>
-              )}
-              
-              {currentComplaint.response && (
-                <div className="response-section">
-                  <h4 className="response-title">Response from {currentComplaint.forwardedTo || "Administration"}</h4>
-                  <div className="response-content">{currentComplaint.response.content}</div>
-                  <div className="response-meta">
-                    <div>Responded by: {currentComplaint.response.by}</div>
-                    <div>Date: {currentComplaint.response.date}</div>
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <div className="modal-footer">
-              <button 
-                type="button" 
-                className="button button-secondary"
-                onClick={() => dispatch(toggleViewModal(false))}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
 
-export default ClientDashboard;
+                <div className="mb-4">
+                  <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-1">
+                    Priority
+                  </label>
+                  <select
+                    id="priority"
+                    name="priority"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    value={newComplaint.priority}
+                    onChange={handleInputChange}
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setShowNewComplaintForm(false)}
+                    className="mr-3 px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600"
+                  >
+                    Submit Complaint
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Complaints List */}
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <svg
+                className="animate-spin h-8 w-8 text-blue-500"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+            </div>
+          ) : filteredComplaints.length === 0 ? (
+            <div className="bg-white rounded-lg shadow-md p-6 text-center">
+              <p className="text-gray-500">No complaints found. Click "New Complaint" to submit one.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredComplaints.map((complaint) => (
+                <div key={complaint._id} className="bg-white rounded-lg shadow-md overflow-hidden">
+                  <div className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1">{complaint.title}</h3>
+                        <p className="text-sm text-gray-500 mb-2">ID: {complaint.uniqueId}</p>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            complaint.status === "pending"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : complaint.status === "in-review"
+                                ? "bg-blue-100 text-blue-800"
+                                : complaint.status === "resolved"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {complaint.status}
+                        </span>
+                        <span
+                          className={`mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            complaint.priority === "low"
+                              ? "bg-green-100 text-green-800"
+                              : complaint.priority === "medium"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : complaint.priority === "high"
+                                  ? "bg-orange-100 text-orange-800"
+                                  : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {complaint.priority}
+                        </span>
+                      </div>
+                    </div>
+
+                    <p className="text-sm text-gray-700 mt-2 line-clamp-2">{complaint.description}</p>
+
+                    <div className="flex justify-between items-center mt-4">
+                      <button
+                        onClick={() =>
+                          setSelectedComplaintId(selectedComplaintId === complaint._id ? null : complaint._id)
+                        }
+                        className="text-sm text-blue-600 hover:text-blue-800"
+                      >
+                        {selectedComplaintId === complaint._id ? "Hide Details" : "View Details"}
+                      </button>
+
+                      <div className="text-xs text-gray-500">{new Date(complaint.createdAt).toLocaleDateString()}</div>
+                    </div>
+                  </div>
+
+                  {selectedComplaintId === complaint._id && (
+                    <div className="border-t border-gray-200 p-4 bg-gray-50">
+                      <div className="mb-4">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Description:</h4>
+                        <p className="text-sm text-gray-600">{complaint.description}</p>
+                      </div>
+
+                      <div className="mb-4">
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">Comments:</h4>
+                        {complaint.comments && complaint.comments.length > 0 ? (
+                          <div className="space-y-2">
+                            {complaint.comments.map((comment, index) => (
+                              <div key={index} className="bg-white p-2 rounded border border-gray-200">
+                                <p className="text-sm text-gray-600">{comment.text}</p>
+                                <div className="flex justify-between items-center mt-1">
+                                  <span className="text-xs text-gray-500">By: {comment.author?.name || "Unknown"}</span>
+                                  <span className="text-xs text-gray-500">
+                                    {new Date(comment.createdAt).toLocaleDateString()}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500">No comments yet.</p>
+                        )}
+
+                        <form onSubmit={handleAddComment} className="mt-3">
+                          <div className="flex">
+                            <input
+                              type="text"
+                              placeholder="Add a comment..."
+                              className="flex-1 text-sm border-gray-300 rounded-l-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                              value={commentText}
+                              onChange={(e) => setCommentText(e.target.value)}
+                            />
+                            <button
+                              type="submit"
+                              className="bg-blue-500 text-white px-3 py-1 rounded-r-md text-sm hover:bg-blue-600"
+                            >
+                              Send
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => handleDeleteComplaint(complaint._id)}
+                          className="bg-red-500 text-white px-3 py-1 rounded-md text-sm hover:bg-red-600"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  )
+}
+
+export default ClientDashboard

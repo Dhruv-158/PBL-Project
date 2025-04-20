@@ -1,9 +1,11 @@
+// File: models/accessrequestmodel.js
+
 const mongoose = require('mongoose');
 
 const accessRequestSchema = new mongoose.Schema({
   complaintId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Compliant',
+    ref: 'Complaint',
     required: true
   },
   supervisorId: {
@@ -31,6 +33,12 @@ const accessRequestSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
   }
+});
+
+// Composite index to ensure uniqueness of pending requests
+accessRequestSchema.index({ complaintId: 1, supervisorId: 1, status: 1 }, { 
+  unique: true,
+  partialFilterExpression: { status: 'pending' }
 });
 
 module.exports = mongoose.model('AccessRequest', accessRequestSchema);

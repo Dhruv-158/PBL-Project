@@ -1,98 +1,122 @@
-import React, { useEffect } from "react";
-import { Provider, useSelector } from "react-redux";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import store from "./Store/store";
-import ClientDashboard from "./components/client/ClientDashboard";
-import SupervisorDashboard from "./components/Superviser/SupervisorDashboard";
-import AdminDashboard from "./components/AdminDashboard/AdminDashboard";
-import LoginForm from "./components/Auth/Login.jsx"; // Assuming your login component is here
-import { selectUserRole, selectCurrentUser } from "./State/authSlice";
+"use client"
 
-// Protected route component
+import { useEffect } from "react"
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
+import { useSelector, useDispatch } from "react-redux"
+import { checkAuth } from "./State/authSlice"
+
+// Auth Components
+import Login from "./components/Auth/Login"
+import Signup from "./components/Auth/Signup"
+
+// Dashboard Components
+import AdminDashboard from "./components/AdminDashboard/AdminDashboard"
+import SupervisorDashboard from "./components/Superviser/SupervisorDashboard"
+import ClientDashboard from "./components/client/ClientDashboard"
+
+// Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
-  const user = useSelector(selectCurrentUser);
-  const userRole = useSelector(selectUserRole);
+  const { isAuthenticated, user } = useSelector((state) => state.auth)
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />
   }
 
-  if (allowedRoles && !allowedRoles.includes(userRole)) {
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
     // Redirect to appropriate dashboard based on role
-    if (userRole === 'admin') {
-      return <Navigate to="/admin" replace />;
-    } else if (userRole === 'supervisor') {
-      return <Navigate to="/supervisor" replace />;
-    } else if (userRole === 'student') {
-      return <Navigate to="/dashboard" replace />;
+    if (user.role === "admin") {
+      return <Navigate to="/admin" />
+    } else if (user.role === "supervisor") {
+      return <Navigate to="/supervisor" />
+    } else {
+      return <Navigate to="/dashboard" />
     }
   }
 
-  return children;
-};
+  return children
+}
 
-// App container component
-const AppContainer = () => {
-  const user = useSelector(selectCurrentUser);
-  const userRole = useSelector(selectUserRole);
+function App() {
+  const dispatch = useDispatch()
+  const { isAuthenticated, user } = useSelector((state) => state.auth)
 
-  // Redirect based on user role
-  const getDashboardPath = () => {
-    if (!user) return '/login';
-    
-    switch (userRole) {
-      case 'admin':
-        return '/admin';
-      case 'supervisor':
-        return '/supervisor';
-      case 'student':
-        return '/dashboard';
-      default:
-        return '/login';
-    }
-  };
+  useEffect(() => {
+    dispatch(checkAuth())
+  }, [dispatch])
 
   return (
     <Router>
-      <Routes>
-        <Route path="/login" element={
-          user ? <Navigate to={getDashboardPath()} replace /> : <LoginForm />
-        } />
-        
-        <Route path="/dashboard" element={
-          <ProtectedRoute allowedRoles={['student']}>
-            <ClientDashboard />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/supervisor" element={
-          <ProtectedRoute allowedRoles={['supervisor']}>
-            <SupervisorDashboard />
-          </ProtectedRoute>
-        } />
-        
-        <Route path="/admin" element={
-          <ProtectedRoute allowedRoles={['admin']}>
-            <AdminDashboard />
-          </ProtectedRoute>
-        } />
-        
-        {/* Redirect to appropriate dashboard or login page */}
-        <Route path="/" element={<Navigate to={getDashboardPath()} replace />} />
-        
-        {/* Catch-all route */}
-        <Route path="*" element={<Navigate to={getDashboardPath()} replace />} />
-      </Routes>
-    </Router>
-  );
-};
+      <div className="min-h-screen bg-gray-50">
+        <Routes>
+          {/* Public Routes */}
+          <Route
+            path="/login"
+            element={
+              isAuthenticated ? (
+                <Navigate
+                  to={user?.role === "admin" ? "/admin" : user?.role === "supervisor" ? "/supervisor" : "/dashboard"}
+                />
+              ) : (
+                <Login />
+              )
+            }
+          />
+          <Route
+            path="/signup"
+            element={
+              isAuthenticated ? (
+                <Navigate
+                  to={user?.role === "admin" ? "/admin" : user?.role === "supervisor" ? "/supervisor" : "/dashboard"}
+                />
+              ) : (
+                <Signup />
+              )
+            }
+          />
 
-function App() {
-  return (
-    <Provider store={store}>
-      <AppContainer />
-    </Provider>
-  );
+          {/* Protected Routes */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/supervisor"
+            element={
+              <ProtectedRoute allowedRoles={["supervisor"]}>
+                <SupervisorDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["user"]}>
+                <ClientDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Redirect based on role or to login */}
+          <Route
+            path="/"
+            element={
+              isAuthenticated ? (
+                <Navigate
+                  to={user?.role === "admin" ? "/admin" : user?.role === "supervisor" ? "/supervisor" : "/dashboard"}
+                />
+              ) : (
+                <Navigate to="/login" />
+              )
+            }
+          />
+        </Routes>
+      </div>
+    </Router>
+  )
 }
 
-export default App;
+export default App

@@ -1,5 +1,5 @@
 const AccessRequest = require('../models/accessrequestmodel');
-const CompliantService = require('./compliantservice');
+const ComplaintService = require('./compliantservice');
 const User = require('../models/User');
 
 class AccessRequestService {
@@ -91,7 +91,7 @@ class AccessRequestService {
     }
 
     // Get the complaint with full student details
-    const complaint = await CompliantService.getCompliantById(complaintId);
+    const complaint = await ComplaintService.getComplaintById(complaintId);
     
     if (!complaint) {
       throw new Error('Complaint not found');
@@ -108,7 +108,18 @@ class AccessRequestService {
 
     return {
       complaint,
-      studentDetails
+      studentDetails: {
+        _id: studentDetails._id,
+        username: studentDetails.username,
+        email: studentDetails.email,
+        role: studentDetails.role,
+        studentId: studentDetails.studentId,
+        name: studentDetails.name,
+        enrollmentId: studentDetails.enrollmentId,
+        college: studentDetails.college,
+        department: studentDetails.department,
+        createdAt: studentDetails.createdAt
+      }
     };
   }
 }

@@ -1,5 +1,5 @@
 const express = require('express');
-const CompliantController = require('../controllers/compliantcontroller');
+const ComplaintController = require('../controllers/compliantcontroller');
 const AuthMiddleware = require('../middleware/authmiddleware');
 const router = express.Router();
 
@@ -7,18 +7,18 @@ const router = express.Router();
 router.use(AuthMiddleware.authenticate);
 
 // Routes accessible by all authenticated users
-router.post('/', CompliantController.createCompliant);
-router.get('/', CompliantController.getAllCompliants);
-router.get('/:id', CompliantController.getCompliantById);
-router.get('/unique/:uniqueId', CompliantController.getCompliantByUniqueId);
+router.post('/', ComplaintController.createComplaint);
+router.get('/', ComplaintController.getAllComplaints);
+router.get('/:id', ComplaintController.getComplaintById);
+router.get('/unique/:uniqueId', ComplaintController.getComplaintByUniqueId);
 
 // Routes with role-based access control
-router.put('/:id', CompliantController.updateCompliant);
-router.post('/:id/comments', CompliantController.addComment);
-router.delete('/:id', CompliantController.deleteCompliant);
+router.put('/:id', ComplaintController.updateComplaint);
+router.post('/:id/comments', ComplaintController.addComment);
+router.delete('/:id', ComplaintController.deleteComplaint);
 
 // Admin-only routes
 router.use(AuthMiddleware.requireAdmin);
-router.patch('/:id/assign', CompliantController.assignCompliant);
+router.patch('/:id/assign', ComplaintController.assignComplaint);
 
 module.exports = router;

@@ -1,16 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const crypto = require('crypto');
 
 class AuthService {
-  // Generate a unique complaint ID
-  generateComplaintId() {
-    // Format: CMPL-XXXX-XXXX (where X is alphanumeric)
-    const randomPart1 = crypto.randomBytes(2).toString('hex').toUpperCase();
-    const randomPart2 = crypto.randomBytes(2).toString('hex').toUpperCase();
-    return `CMPL-${randomPart1}-${randomPart2}`;
-  }
-
   async register(userData) {
     try {
       // Check for required fields for all user types
@@ -24,10 +15,8 @@ class AuthService {
       // Ensure role is set before validation
       userData.role = userData.role || 'user';
 
-      // Generate complaint ID for users with 'user' role
+      // Add role-specific validations
       if (userData.role === 'user') {
-        userData.complaintId = this.generateComplaintId();
-        
         const requiredFields = ['studentId', 'name', 'enrollmentId', 'college', 'department'];
         for (const field of requiredFields) {
           if (!userData[field]) {
@@ -73,15 +62,11 @@ class AuthService {
           _id: user._id,
           username: user.username,
           email: user.email,
-          role: user.role
+          role: user.role,
+          name: user.name
         },
         tokens
       };
-      
-      // Add complaintId to response if user role
-      if (user.role === 'user') {
-        response.user.complaintId = user.complaintId;
-      }
       
       return response;
     } catch (error) {
@@ -105,15 +90,11 @@ class AuthService {
           _id: user._id,
           username: user.username,
           email: user.email,
-          role: user.role
+          role: user.role,
+          name: user.name
         },
         tokens
       };
-      
-      // Add complaintId to response if user role
-      if (user.role === 'user' && user.complaintId) {
-        response.user.complaintId = user.complaintId;
-      }
       
       return response;
     } catch (error) {
@@ -128,7 +109,7 @@ class AuthService {
         username: user.username,
         email: user.email, 
         role: user.role,
-        ...(user.role === 'user' && user.complaintId ? { complaintId: user.complaintId } : {})
+        name: user.name
       },
       process.env.JWT_SECRET,
       { expiresIn: '30d' }
