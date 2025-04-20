@@ -1,5 +1,3 @@
-// File: models/accessrequestmodel.js
-
 const mongoose = require('mongoose');
 
 const accessRequestSchema = new mongoose.Schema({

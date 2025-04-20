@@ -1,5 +1,3 @@
-const AccessRequestService = require('../services/accessrequestservice');
-
 class AccessRequestController {
   async createRequest(req, res, next) {
     try {

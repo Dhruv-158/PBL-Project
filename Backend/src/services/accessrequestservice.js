@@ -1,5 +1,5 @@
 const AccessRequest = require('../models/accessrequestmodel');
-const ComplaintService = require('./compliantservice');
+const ComplaintService = require('./complaintservice');
 const User = require('../models/User');
 
 class AccessRequestService {
